@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class MenuRepository implements Repository<Menu> {
     private static MenuRepository instance;
@@ -26,7 +27,6 @@ public class MenuRepository implements Repository<Menu> {
 
     @Override
     public List<Menu> findAll() {
-        List<Menu> menus = new ArrayList<>();
 
         String sql = """
                 select
@@ -35,27 +35,40 @@ public class MenuRepository implements Repository<Menu> {
                     menus""";
 
         try {
-            ResultSet rs = select(databaseProvider.getConnection(), sql);
-            while (rs.next()) {
-                menus.add(new Menu(
-                        rs.getInt("menu_id"),
-                        rs.getInt("restaurant_id"),
-                        rs.getString("name"),
-                        rs.getInt("price"),
-                        rs.getString("description"),
-                        rs.getBoolean("is_signature"),
-                        rs.getBoolean("is_sold_out")
-                ));
-            }
+            return select(databaseProvider.getConnection(), sql, null)
+                    .stream()
+                    .map(Menu::new)
+                    .toList();
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        return menus;
+        return List.of();
     }
 
     @Override
     public Menu findById(int id) {
+        String sql = """
+                select
+                    *
+                from
+                    menus
+                where
+                    menu_id = ?
+                """;
+
+        try {
+            Map<String, Object> row = selectOne(databaseProvider.getConnection(), sql, List.of(id));
+            return new Menu(row);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
         return null;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(MenuRepository.getInstance().findAll());
+        System.out.println(MenuRepository.getInstance().findById(1));
     }
 }
